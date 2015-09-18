@@ -26,7 +26,9 @@ import cgi
 import io
 import os
 
-from .irclog2html import CSS_FILE, LogParser
+from .irclog2html import (
+    CSS_FILE, LogParser, XHTMLTableStyle, convert_irc_log,
+)
 from .irclogsearch import (
     DEFAULT_LOGFILE_PATH, DEFAULT_LOGFILE_PATTERN, search_page,
 )
@@ -82,6 +84,15 @@ def application(environ, start_response):
                 result = [b"Try /search"]
                 headers['Location'] = '/search'
                 content_type = "text/plain"
+            elif path.endswith('.html'):
+                buf = io.BytesIO()
+                with open(os.path.join(logfile_path, path[:-5]), 'rb') as f:
+                    parser = LogParser(f)
+                    formatter = XHTMLTableStyle(buf)
+                    convert_irc_log(parser, formatter, path[:-5],
+                                    ('', ''), ('', ''), ('', ''),
+                                    searchbox=True)
+                    result = [buf.getvalue()]
             else:
                 status = "404 Not Found"
                 result = [b"Not found"]
